@@ -1,0 +1,37 @@
+[package]
+name = "p99gate"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "HTTP load testing for CI: open-loop, coordinated-omission-corrected latency, with pass/fail thresholds"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["load-testing", "benchmark", "http", "latency", "ci"]
+categories = ["command-line-utilities", "development-tools::testing"]
+exclude = ["/.github"]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "p99gate"
+path = "src/main.rs"
+
+[dependencies]
+
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Pedantic lints that add noise without improving this codebase.
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+cast_precision_loss = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
