@@ -27,7 +27,7 @@ use std::future::Future;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use tokio::sync::{Semaphore, mpsc};
 use tokio::time::{Instant, sleep_until, timeout};
@@ -105,6 +105,7 @@ impl<E: Executor> Engine<E> {
             recorder
         });
 
+        let started_at = SystemTime::now();
         let start = Instant::now();
         let deadline = sleep_until(start + config.duration);
         tokio::pin!(shutdown, deadline);
@@ -159,6 +160,7 @@ impl<E: Executor> Engine<E> {
             send_window,
             elapsed: start.elapsed(),
             interrupted,
+            started_at,
             recorder,
         }
     }
@@ -179,10 +181,8 @@ pub struct Measurements {
     pub elapsed: Duration,
     /// Whether the run was stopped early by the shutdown signal.
     pub interrupted: bool,
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "read by the report module, added next")
-    )]
+    /// Wall-clock time at which the run started.
+    pub started_at: SystemTime,
     pub(crate) recorder: Recorder,
 }
 

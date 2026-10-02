@@ -3,5 +3,6 @@
 pub mod engine;
 pub mod executor;
 pub mod outcome;
+pub mod report;
 pub mod schedule;
 mod stats;

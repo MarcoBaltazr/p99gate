@@ -22,10 +22,6 @@ pub(crate) struct Recorder {
     failures: u64,
 }
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "read by the report module, added next")
-)]
 impl Recorder {
     pub(crate) fn new() -> Self {
         Self {
