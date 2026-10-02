@@ -14,7 +14,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::report::{RunReport, ThresholdResult};
+use crate::report::{RunReport, ThresholdResult, Unit};
 
 /// A parsed `--fail-if` condition.
 #[derive(Debug, Clone, PartialEq)]
@@ -75,6 +75,11 @@ impl Threshold {
         ThresholdResult {
             expression: self.expression.clone(),
             observed,
+            unit: match self.metric {
+                Metric::Latency(_) => Unit::Micros,
+                Metric::ErrorRate => Unit::Ratio,
+                Metric::Rps => Unit::PerSecond,
+            },
             violated,
         }
     }
@@ -264,6 +269,8 @@ mod tests {
         assert!(check("p99>5ms").violated);
         assert!(!check("p99>20ms").violated);
         assert!((check("p99>20ms").observed - 10_000.0).abs() <= 10.0);
+        assert_eq!(check("p99>20ms").unit, Unit::Micros);
+        assert_eq!(check("error_rate>0%").unit, Unit::Ratio);
         assert!(!check("error_rate>0%").violated);
         assert!(check("error_rate<=0%").violated);
         assert!(!check("rps<90").violated);

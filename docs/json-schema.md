@@ -70,7 +70,7 @@ timed-out request contributes the time until it timed out.
 | `status_codes` | object | Status code (as a string key) to count. |
 | `errors` | object | Transport error kind to count. Kinds: `timeout`, `connect`, `io`, `other`. |
 | `saturated` | bool | `true` if `requests.unsent > 0` or `send_lag.p99_us` exceeds 50 ms: the target rate was not sustained. |
-| `thresholds` | array | One entry per `--fail-if`, in order: `{ "expression": string, "observed": float, "violated": bool }`. `observed` is in the metric's unit: microseconds for latency, a ratio for `error_rate`, per second for `rps`. |
+| `thresholds` | array | One entry per `--fail-if`, in order: `{ "expression": string, "observed": float, "unit": string, "violated": bool }`. `unit` is `"us"` for latency metrics, `"ratio"` for `error_rate` and `"per_s"` for `rps`. `violated: true` means the condition held and the run failed. |
 
 Percentiles come from an HDR histogram with 3 significant digits, so each value
 is accurate to within 0.1%.

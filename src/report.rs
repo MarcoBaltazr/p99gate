@@ -166,10 +166,26 @@ pub struct Bucket {
 pub struct ThresholdResult {
     /// The threshold as written, e.g. `"p99>300ms"`.
     pub expression: String,
-    /// The measured value, in the metric's unit (microseconds, ratio or per second).
+    /// The measured value, in `unit`.
     pub observed: f64,
+    /// The unit of `observed`.
+    pub unit: Unit,
     /// Whether the threshold was violated, i.e. the run should fail.
     pub violated: bool,
+}
+
+/// The unit of a threshold's observed value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Unit {
+    /// Microseconds.
+    #[serde(rename = "us")]
+    Micros,
+    /// A fraction from 0.0 to 1.0.
+    #[serde(rename = "ratio")]
+    Ratio,
+    /// Events per second.
+    #[serde(rename = "per_s")]
+    PerSecond,
 }
 
 impl RunReport {
