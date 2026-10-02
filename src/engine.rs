@@ -148,7 +148,13 @@ impl<E: Executor> Engine<E> {
             });
             sent += 1;
         };
-        let send_window = start.elapsed();
+        // A run that sent its whole schedule covered the full duration, even
+        // though the last request went out one period before the end.
+        let send_window = if interrupted {
+            start.elapsed()
+        } else {
+            start.elapsed().max(config.duration)
+        };
 
         drop(samples_tx);
         let recorder = collector.await.expect("the collector task does not panic");
@@ -332,6 +338,7 @@ mod tests {
         assert_eq!(m.scheduled, 200);
         assert_eq!(m.sent, 200);
         assert_eq!(m.unsent(), 0);
+        assert_eq!(m.send_window, Duration::from_secs(2));
         assert_eq!(m.recorder.completed(), 200);
         assert_eq!(
             m.recorder.send_lag().max(),
