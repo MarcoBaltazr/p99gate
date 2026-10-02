@@ -18,10 +18,18 @@ name = "p99gate"
 path = "src/main.rs"
 
 [dependencies]
+bytes = "1.12.1"
+fastrand = "2.5.0"
 hdrhistogram = { version = "7.5.4", default-features = false }
+http = "1.5.0"
+http-body-util = "0.1.5"
 humantime = "2.4.0"
+hyper = { version = "1.11.1", features = ["client", "server", "http1"] }
+hyper-rustls = { version = "0.27.10", default-features = false, features = ["http1", "tls12", "ring", "native-tokio"] }
+hyper-util = { version = "0.1.21", features = ["client-legacy", "http1", "tokio"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
+thiserror = "2.0.21"
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "time", "sync", "net", "signal"] }
 
 [lints.rust]
@@ -42,4 +50,4 @@ codegen-units = 1
 strip = true
 
 [dev-dependencies]
-tokio = { version = "1.53.1", features = ["test-util", "macros", "rt"] }
+tokio = { version = "1.53.1", features = ["test-util", "macros", "rt", "rt-multi-thread"] }
