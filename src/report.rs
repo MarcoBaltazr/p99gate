@@ -271,22 +271,26 @@ fn bucket_bounds() -> impl Iterator<Item = u64> {
 }
 
 /// Groups samples into 1-2-5 buckets, trimmed to the non-empty range.
+///
+/// Each recorded value is assigned to exactly one bucket. (Range queries such
+/// as `Histogram::count_between` work on HDR equivalence ranges and can count
+/// a value near a bucket edge in both neighbouring buckets.)
 fn buckets(h: &Histogram<u64>) -> Vec<Bucket> {
     if h.is_empty() {
         return Vec::new();
     }
     let max = h.max();
-    let mut out = Vec::new();
-    let mut low = 0;
-    for le_us in bucket_bounds() {
-        // `count_between` is inclusive at both ends; start one above the
-        // previous bound so no sample is counted twice.
-        let count = h.count_between(low, le_us);
-        out.push(Bucket { le_us, count });
-        if le_us >= max {
-            break;
-        }
-        low = le_us + 1;
+    let mut out: Vec<Bucket> = bucket_bounds()
+        .scan(false, |past_max, le_us| {
+            // Include the first bound at or above `max`, then stop.
+            let done = *past_max;
+            *past_max = le_us >= max;
+            (!done).then_some(Bucket { le_us, count: 0 })
+        })
+        .collect();
+    for value in h.iter_recorded() {
+        let index = out.partition_point(|b| b.le_us < value.value_iterated_to());
+        out[index].count += value.count_at_value();
     }
     let first = out.iter().position(|b| b.count > 0).unwrap_or(0);
     out.drain(..first);
@@ -330,6 +334,15 @@ mod tests {
                 (10_000, 1)
             ]
         );
+    }
+
+    #[test]
+    fn values_near_bucket_edges_are_counted_once() {
+        // At this magnitude HDR stores values in ranges 8 wide, so 10_003
+        // straddles the 10_000 bucket edge.
+        let h = histogram(&[9_999, 10_000, 10_003, 10_008]);
+        let b = buckets(&h);
+        assert_eq!(b.iter().map(|b| b.count).sum::<u64>(), 4);
     }
 
     #[test]
