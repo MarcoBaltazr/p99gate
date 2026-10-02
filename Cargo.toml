@@ -15,10 +15,14 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "p99gate"
-path = "src/main.rs"
+path = "src/bin/p99gate/main.rs"
 
 [dependencies]
+anstream = "1.0.0"
+anstyle = "1.0.14"
+anyhow = "1.0.104"
 bytes = "1.12.1"
+clap = { version = "4.6.7", features = ["derive"] }
 fastrand = "2.5.0"
 hdrhistogram = { version = "7.5.4", default-features = false }
 http = "1.5.0"
@@ -27,6 +31,7 @@ humantime = "2.4.0"
 hyper = { version = "1.11.1", features = ["client", "server", "http1"] }
 hyper-rustls = { version = "0.27.10", default-features = false, features = ["http1", "tls12", "ring", "native-tokio"] }
 hyper-util = { version = "0.1.21", features = ["client-legacy", "http1", "tokio"] }
+indicatif = "0.18.6"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 thiserror = "2.0.21"
