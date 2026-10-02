@@ -38,3 +38,6 @@ cast_precision_loss = "allow"
 lto = "thin"
 codegen-units = 1
 strip = true
+
+[dev-dependencies]
+tokio = { version = "1.53.1", features = ["test-util", "macros", "rt"] }
