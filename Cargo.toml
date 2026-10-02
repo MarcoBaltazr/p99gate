@@ -18,6 +18,9 @@ name = "p99gate"
 path = "src/main.rs"
 
 [dependencies]
+hdrhistogram = { version = "7.5.4", default-features = false }
+serde = { version = "1.0.229", features = ["derive"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "time", "sync", "net", "signal"] }
 
 [lints.rust]
 missing_docs = "warn"
