@@ -54,6 +54,9 @@ pub struct RunArgs {
     #[arg(short, long)]
     pub body: Option<String>,
 
+    #[command(flatten)]
+    pub protocol: ProtocolArgs,
+
     /// Send requests through this http:// proxy. By default the proxy is
     /// taken from `HTTP_PROXY` / `HTTPS_PROXY`, honouring `NO_PROXY`.
     #[arg(long, value_name = "URL", value_parser = parse_proxy)]
@@ -73,7 +76,19 @@ pub struct DemoArgs {
     pub load: LoadArgs,
 
     #[command(flatten)]
+    pub protocol: ProtocolArgs,
+
+    #[command(flatten)]
     pub report: ReportArgs,
+}
+
+/// HTTP protocol options.
+#[derive(Debug, Args)]
+pub struct ProtocolArgs {
+    /// Use HTTP/2 (ALPN for https://, prior knowledge for http://) over a
+    /// single multiplexed connection. Default is HTTP/1.1.
+    #[arg(long)]
+    pub http2: bool,
 }
 
 /// Options shared by every command that generates load.

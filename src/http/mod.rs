@@ -1,4 +1,4 @@
-//! HTTP/1.1 support, over plain TCP or TLS, directly or through a proxy.
+//! HTTP/1.1 and HTTP/2 support, over plain TCP or TLS, directly or through a proxy.
 
 mod connector;
 
@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use bytes::Bytes;
 use http::header::PROXY_AUTHORIZATION;
-use http::{HeaderMap, Method, Request, Uri};
+use http::{HeaderMap, Method, Request, Uri, Version};
 use http_body_util::{BodyExt, Full};
 use hyper_rustls::HttpsConnector;
 use hyper_util::client::legacy::Client;
@@ -69,11 +69,36 @@ pub enum Proxy {
     Url(Uri),
 }
 
+/// The HTTP version to speak.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum HttpVersion {
+    /// HTTP/1.1, with one request at a time per connection and up to
+    /// `max_connections` connections.
+    #[default]
+    Http1,
+    /// HTTP/2 only: negotiated with ALPN for `https`, and with prior
+    /// knowledge (h2c) for `http`. All requests are multiplexed over a
+    /// single connection, so the server's stream limit can make requests
+    /// queue; that wait counts towards latency like any other.
+    Http2,
+}
+
+impl HttpVersion {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Http1 => "1.1",
+            Self::Http2 => "2",
+        }
+    }
+}
+
 /// Options for [`HttpExecutor`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpOptions {
     /// Idle connections to keep open; should match the engine's concurrency.
     pub max_connections: usize,
+    /// HTTP version.
+    pub version: HttpVersion,
     /// Proxy configuration.
     pub proxy: Proxy,
 }
@@ -84,6 +109,7 @@ impl HttpOptions {
     pub fn new(max_connections: usize) -> Self {
         Self {
             max_connections,
+            version: HttpVersion::Http1,
             proxy: Proxy::None,
         }
     }
@@ -111,6 +137,7 @@ pub enum HttpError {
 pub struct HttpExecutor {
     client: Client<HttpsConnector<Connector>, Full<Bytes>>,
     spec: RequestSpec,
+    version: HttpVersion,
     /// The proxy in use, without credentials, for reporting.
     proxy: Option<String>,
 }
@@ -155,20 +182,30 @@ impl HttpExecutor {
             }
         };
 
-        let connector = hyper_rustls::HttpsConnectorBuilder::new()
+        let tls = hyper_rustls::HttpsConnectorBuilder::new()
             .with_native_roots()
             .map_err(HttpError::RootCertificates)?
-            .https_or_http()
-            .enable_http1()
-            .wrap_connector(Connector::new(tcp, route));
+            .https_or_http();
+        // ALPN offers exactly the chosen version, so the server cannot
+        // silently pick another one.
+        let connector = match options.version {
+            HttpVersion::Http1 => tls
+                .enable_http1()
+                .wrap_connector(Connector::new(tcp, route)),
+            HttpVersion::Http2 => tls
+                .enable_http2()
+                .wrap_connector(Connector::new(tcp, route)),
+        };
 
         let client = Client::builder(TokioExecutor::new())
             .pool_max_idle_per_host(options.max_connections)
             .pool_idle_timeout(Duration::from_secs(90))
+            .http2_only(options.version == HttpVersion::Http2)
             .build(connector);
         Ok(Self {
             client,
             spec,
+            version: options.version,
             proxy,
         })
     }
@@ -181,6 +218,7 @@ impl HttpExecutor {
             protocol: "http".to_owned(),
             method: self.spec.method.to_string(),
             url: self.spec.uri.to_string(),
+            http_version: self.version.as_str().to_owned(),
             proxy: self.proxy.clone(),
         }
     }
@@ -204,7 +242,12 @@ fn describe_proxy(proxy: &Uri) -> Result<String, HttpError> {
 
 impl Executor for HttpExecutor {
     async fn execute(&self) -> Outcome {
-        let response = match self.client.request(self.spec.build()).await {
+        let mut request = self.spec.build();
+        if self.version == HttpVersion::Http2 {
+            // Makes hyper refuse an HTTP/1 connection instead of using it.
+            *request.version_mut() = Version::HTTP_2;
+        }
+        let response = match self.client.request(request).await {
             Ok(response) => response,
             Err(e) if e.is_connect() => return Outcome::Error(ErrorKind::Connect),
             Err(_) => return Outcome::Error(ErrorKind::Io),

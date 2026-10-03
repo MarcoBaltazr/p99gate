@@ -262,6 +262,7 @@ mod tests {
             protocol: "http".into(),
             method: "GET".into(),
             url: "http://test/".into(),
+            http_version: "1.1".into(),
             proxy: None,
         };
         let report = RunReport::new(&measurements, target);

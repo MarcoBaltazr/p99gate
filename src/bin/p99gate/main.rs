@@ -19,7 +19,7 @@ use clap::Parser as _;
 use http::HeaderMap;
 use p99gate::demo::DemoServer;
 use p99gate::engine::{Engine, LoadConfig};
-use p99gate::http::{HttpExecutor, HttpOptions, Proxy, RequestSpec};
+use p99gate::http::{HttpExecutor, HttpOptions, HttpVersion, Proxy, RequestSpec};
 use p99gate::report::RunReport;
 
 use crate::args::{Cli, Command, LoadArgs, OutputFormat, ReportArgs};
@@ -59,6 +59,7 @@ async fn run(cli: Cli) -> anyhow::Result<ExitCode> {
                 body: load_body(args.body.as_deref())?,
             };
             let mut http = HttpOptions::new(args.load.concurrency.get());
+            http.version = http_version(args.protocol.http2);
             http.proxy = match (args.proxy, args.no_proxy) {
                 (Some(url), _) => Proxy::Url(url),
                 (None, true) => Proxy::None,
@@ -77,7 +78,8 @@ async fn run(cli: Cli) -> anyhow::Result<ExitCode> {
             );
             let spec = RequestSpec::get(server.url().parse()?);
             // The demo server is local: never route it through a proxy.
-            let http = HttpOptions::new(args.load.concurrency.get());
+            let mut http = HttpOptions::new(args.load.concurrency.get());
+            http.version = http_version(args.protocol.http2);
             load_test(spec, &http, &args.load, &args.report).await
         }
     }
@@ -100,10 +102,11 @@ async fn load_test(
     let engine = Engine::new(config, executor);
 
     eprintln!(
-        "Sending {} req/s to {} {} for {}",
+        "Sending {} req/s to {} {} over HTTP/{} for {}",
         config.rate.get(),
         target.method,
         target.url,
+        target.http_version,
         humantime::format_duration(config.duration),
     );
     if let Some(proxy) = &target.proxy {
@@ -141,6 +144,14 @@ async fn load_test(
     } else {
         0
     }))
+}
+
+fn http_version(http2: bool) -> HttpVersion {
+    if http2 {
+        HttpVersion::Http2
+    } else {
+        HttpVersion::Http1
+    }
 }
 
 /// Reads `--body`: a literal, or `@path` for a file's contents.

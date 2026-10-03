@@ -10,9 +10,9 @@ use std::time::Duration;
 use bytes::Bytes;
 use http::{Response, StatusCode};
 use http_body_util::Full;
-use hyper::server::conn::http1;
 use hyper::service::service_fn;
-use hyper_util::rt::TokioIo;
+use hyper_util::rt::{TokioExecutor, TokioIo};
+use hyper_util::server::conn::auto;
 use tokio::net::TcpListener;
 use tokio::task::{JoinHandle, JoinSet};
 use tokio::time::Instant;
@@ -71,7 +71,8 @@ impl DemoServer {
                     }
                 });
                 connections.spawn(async move {
-                    let _ = http1::Builder::new()
+                    // Serves HTTP/1.1 and HTTP/2 with prior knowledge (h2c).
+                    let _ = auto::Builder::new(TokioExecutor::new())
                         .serve_connection(TokioIo::new(stream), service)
                         .await;
                 });
