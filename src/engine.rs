@@ -116,14 +116,25 @@ impl<E: Executor> Engine<E> {
                 break false;
             }
             let intended = start + schedule.offset(sent);
-            let permit = tokio::select! {
+            tokio::select! {
                 biased;
                 () = &mut shutdown => break true,
-                () = &mut deadline => break false,
-                permit = async {
-                    sleep_until(intended).await;
-                    Arc::clone(&semaphore).acquire_owned().await
-                } => permit.expect("the semaphore is never closed"),
+                () = sleep_until(intended) => {}
+            }
+            // Every request reaching this point was due inside the window, even
+            // if the timer woke it on the same tick as the deadline. The
+            // deadline only cuts off requests still waiting for a free slot.
+            let permit = if let Ok(permit) = Arc::clone(&semaphore).try_acquire_owned() {
+                permit
+            } else {
+                tokio::select! {
+                    biased;
+                    () = &mut shutdown => break true,
+                    () = &mut deadline => break false,
+                    permit = Arc::clone(&semaphore).acquire_owned() => {
+                        permit.expect("the semaphore is never closed")
+                    }
+                }
             };
 
             let sent_at = Instant::now();
@@ -404,6 +415,20 @@ mod tests {
         // (latency minus send lag) is tiny for every request but the stalled one.
         let wire_p99 = p99 - lag_p99;
         assert!(wire_p99 < 50.0, "wire time p99 was {wire_p99} ms");
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn timer_granularity_does_not_drop_requests_due_before_the_deadline() {
+        // At 3,000/s the last request is due at 999.67 ms. The timer wakes it
+        // at the 1 ms tick, the same tick as the end of the run; it was due
+        // inside the window, so it must still be sent.
+        let m = Engine::new(config(3_000.0, 1, 1_000), Fixed(Duration::from_millis(1)))
+            .run()
+            .await;
+
+        assert_eq!(m.scheduled, 3_000);
+        assert_eq!(m.sent, 3_000);
+        assert_eq!(m.unsent(), 0);
     }
 
     #[tokio::test(start_paused = true)]
