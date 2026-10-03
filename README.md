@@ -2,7 +2,7 @@
 
 p99gate is an HTTP load tester for CI: it measures latency without hiding stalls, and fails the build when a threshold such as `p99>300ms` is crossed.
 
-<!-- Demo GIF goes here (docs/demo.gif), e.g. recorded with VHS running `p99gate demo`. -->
+![p99gate demo: a load test against the built-in demo server, with one threshold passing and one failing](https://raw.githubusercontent.com/MarcoBaltazr/p99gate/main/docs/demo.gif)
 
 ```sh
 cargo install --locked p99gate     # or download a binary from GitHub Releases

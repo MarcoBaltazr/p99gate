@@ -86,6 +86,22 @@ example, measuring latency from the actual send time must fail
   carries a protocol status code, and `report::Target::protocol` identifies the
   protocol.
 
+### The demo GIF
+
+`docs/demo.gif` is a real run recorded by `scripts/record-demo.py`, which runs
+the release binary in a pseudo-terminal and keeps the real output timing (only
+the typing is simulated). If you change the terminal output, regenerate it:
+
+```sh
+cargo build --release
+python3 scripts/record-demo.py docs/demo.cast
+agg --font-family "DejaVu Sans Mono" --font-size 18 --theme monokai \
+    --fps-cap 15 --last-frame-duration 6 docs/demo.cast docs/demo.gif
+```
+
+[`agg`](https://github.com/asciinema/agg) installs with
+`cargo install --git https://github.com/asciinema/agg`.
+
 ### The JSON schema
 
 `docs/json-schema.md` is a public contract. Adding a field is fine; renaming,
@@ -94,8 +110,6 @@ updating the document in the same pull request.
 
 ## Good first contributions
 
-- **Record the README demo GIF** with [VHS](https://github.com/charmbracelet/vhs),
-  and commit the `.tape` file so it can be regenerated.
 - **Shell completions** with `clap_complete`, e.g. `p99gate completions bash`.
 - **Read the body from stdin** with `--body @-`.
 - **More threshold metrics**, e.g. `unsent>0` or `send_lag_p99>10ms`. See

@@ -11,7 +11,7 @@ documentation = "https://docs.rs/p99gate"
 readme = "README.md"
 keywords = ["load-testing", "benchmark", "http", "latency", "ci"]
 categories = ["command-line-utilities", "development-tools::testing"]
-exclude = ["/.github"]
+exclude = ["/.github", "/docs/demo.*", "/scripts"]
 
 [lib]
 path = "src/lib.rs"
