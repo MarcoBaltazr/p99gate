@@ -62,7 +62,7 @@ timed-out request contributes the time until it timed out.
 | `requests.failed` | integer | Completed with a transport error or a status of 400 or above. |
 | `throughput.target_per_s` | float | Same as `config.rate_per_s`. |
 | `throughput.sent_per_s` | float | `requests.sent / run.send_window_s`. |
-| `throughput.completed_per_s` | float | `requests.completed / run.elapsed_s`. |
+| `throughput.completed_per_s` | float | `requests.completed / run.send_window_s`. Responses arriving during the drain after sending stops are included, so a run in which every request completes reports the same value as `sent_per_s`. |
 | `error_rate` | float | `requests.failed / requests.completed` (`0.0` when nothing completed). |
 | `latency.min_us` … `latency.max_us` | integer | `min`, `mean`, `p50`, `p75`, `p90`, `p95`, `p99`, `p999` and `max`, each suffixed `_us`. |
 | `latency.histogram` | array | Buckets `{ "le_us": integer, "count": integer }` on a 1-2-5 scale. Each counts samples greater than the previous bucket's `le_us` and at most its own. Empty leading buckets are omitted. |

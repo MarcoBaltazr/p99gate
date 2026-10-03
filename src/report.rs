@@ -122,7 +122,9 @@ pub struct Throughput {
     pub target_per_s: f64,
     /// `sent / send_window_s`.
     pub sent_per_s: f64,
-    /// `completed / elapsed_s`.
+    /// `completed / send_window_s`: responses per second of test. Responses
+    /// that arrive while in-flight requests drain after sending stops still
+    /// count, so a run where everything completes matches `sent_per_s`.
     pub completed_per_s: f64,
 }
 
@@ -226,7 +228,7 @@ impl RunReport {
             throughput: Throughput {
                 target_per_s: m.config.rate.get(),
                 sent_per_s: per_second(m.sent, m.send_window),
-                completed_per_s: per_second(completed, m.elapsed),
+                completed_per_s: per_second(completed, m.send_window),
             },
             error_rate: if completed == 0 {
                 0.0
