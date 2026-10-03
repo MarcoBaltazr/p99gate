@@ -19,7 +19,7 @@ use clap::Parser as _;
 use http::HeaderMap;
 use p99gate::demo::DemoServer;
 use p99gate::engine::{Engine, LoadConfig};
-use p99gate::http::{HttpExecutor, RequestSpec};
+use p99gate::http::{HttpExecutor, HttpOptions, Proxy, RequestSpec};
 use p99gate::report::RunReport;
 
 use crate::args::{Cli, Command, LoadArgs, OutputFormat, ReportArgs};
@@ -58,7 +58,13 @@ async fn run(cli: Cli) -> anyhow::Result<ExitCode> {
                 headers,
                 body: load_body(args.body.as_deref())?,
             };
-            load_test(spec, &args.load, &args.report).await
+            let mut http = HttpOptions::new(args.load.concurrency.get());
+            http.proxy = match (args.proxy, args.no_proxy) {
+                (Some(url), _) => Proxy::Url(url),
+                (None, true) => Proxy::None,
+                (None, false) => Proxy::FromEnv,
+            };
+            load_test(spec, &http, &args.load, &args.report).await
         }
         Command::Demo(args) => {
             let server = DemoServer::start()
@@ -70,13 +76,16 @@ async fn run(cli: Cli) -> anyhow::Result<ExitCode> {
                 server.url()
             );
             let spec = RequestSpec::get(server.url().parse()?);
-            load_test(spec, &args.load, &args.report).await
+            // The demo server is local: never route it through a proxy.
+            let http = HttpOptions::new(args.load.concurrency.get());
+            load_test(spec, &http, &args.load, &args.report).await
         }
     }
 }
 
 async fn load_test(
     spec: RequestSpec,
+    http: &HttpOptions,
     load: &LoadArgs,
     output: &ReportArgs,
 ) -> anyhow::Result<ExitCode> {
@@ -86,8 +95,8 @@ async fn load_test(
         concurrency: load.concurrency,
         timeout: load.timeout,
     };
-    let target = spec.target();
-    let executor = HttpExecutor::new(spec, config.concurrency.get())?;
+    let executor = HttpExecutor::new(spec, http)?;
+    let target = executor.target();
     let engine = Engine::new(config, executor);
 
     eprintln!(
@@ -97,6 +106,9 @@ async fn load_test(
         target.url,
         humantime::format_duration(config.duration),
     );
+    if let Some(proxy) = &target.proxy {
+        eprintln!("  via proxy {proxy} (proxy latency is included in the measurements)");
+    }
     let live = Live::start(engine.progress(), config.duration);
     let measurements = engine.run_until(ctrl_c()).await;
     live.finish();

@@ -70,6 +70,8 @@ pub struct Target {
     pub method: String,
     /// Request URL.
     pub url: String,
+    /// The proxy requests went through, without credentials, or `None`.
+    pub proxy: Option<String>,
 }
 
 /// The requested load.
@@ -403,6 +405,7 @@ mod tests {
                 protocol: "http".into(),
                 method: "GET".into(),
                 url: "http://test/".into(),
+                proxy: None,
             },
         );
 

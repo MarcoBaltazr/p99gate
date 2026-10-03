@@ -46,6 +46,7 @@ timed-out request contributes the time until it timed out.
 | `target.protocol` | string | `"http"`. |
 | `target.method` | string | HTTP method, e.g. `"GET"`. |
 | `target.url` | string | Request URL. |
+| `target.proxy` | string or null | The proxy requests went through, without credentials, e.g. `"http://proxy:3128"`. `null` for direct connections. Proxy latency is part of every measurement. |
 | `config.rate_per_s` | float | Target request rate. |
 | `config.duration_s` | float | Configured sending duration. |
 | `config.concurrency` | integer | Maximum requests in flight. |

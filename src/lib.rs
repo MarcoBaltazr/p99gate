@@ -20,7 +20,7 @@
 //!
 //! use p99gate::demo::DemoServer;
 //! use p99gate::engine::{Engine, LoadConfig};
-//! use p99gate::http::{HttpExecutor, RequestSpec};
+//! use p99gate::http::{HttpExecutor, HttpOptions, RequestSpec};
 //! use p99gate::report::RunReport;
 //! use p99gate::schedule::Rate;
 //! use p99gate::threshold::Threshold;
@@ -29,7 +29,6 @@
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let server = DemoServer::start().await?;
 //! let spec = RequestSpec::get(server.url().parse()?);
-//! let target = spec.target();
 //!
 //! let config = LoadConfig {
 //!     rate: Rate::per_second(100.0).expect("positive rate"),
@@ -37,7 +36,8 @@
 //!     concurrency: NonZeroUsize::new(50).expect("non-zero"),
 //!     timeout: Duration::from_secs(5),
 //! };
-//! let executor = HttpExecutor::new(spec, config.concurrency.get())?;
+//! let executor = HttpExecutor::new(spec, &HttpOptions::new(config.concurrency.get()))?;
+//! let target = executor.target();
 //! let measurements = Engine::new(config, executor).run().await;
 //! let report = RunReport::new(&measurements, target);
 //!

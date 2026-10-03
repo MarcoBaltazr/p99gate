@@ -28,14 +28,15 @@ hdrhistogram = { version = "7.5.4", default-features = false }
 http = "1.5.0"
 http-body-util = "0.1.5"
 humantime = "2.4.0"
-hyper = { version = "1.11.1", features = ["client", "server", "http1"] }
-hyper-rustls = { version = "0.27.10", default-features = false, features = ["http1", "tls12", "ring", "native-tokio"] }
-hyper-util = { version = "0.1.21", features = ["client-legacy", "http1", "tokio"] }
+hyper = { version = "1.11.1", features = ["client", "server", "http1", "http2"] }
+hyper-rustls = { version = "0.27.10", default-features = false, features = ["http1", "tls12", "ring", "native-tokio", "http2"] }
+hyper-util = { version = "0.1.21", features = ["client-legacy", "client-proxy", "http1", "http2", "server-auto", "tokio"] }
 indicatif = "0.18.6"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 thiserror = "2.0.21"
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "time", "sync", "net", "signal"] }
+tower-service = "0.3.3"
 
 [lints.rust]
 missing_docs = "warn"

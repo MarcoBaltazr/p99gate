@@ -11,7 +11,7 @@ use std::time::Duration;
 use http::StatusCode;
 use p99gate::demo::{self, DemoServer, Reply};
 use p99gate::engine::{Engine, LoadConfig};
-use p99gate::http::{HttpExecutor, RequestSpec};
+use p99gate::http::{HttpExecutor, HttpOptions, RequestSpec};
 use p99gate::outcome::ErrorKind;
 use p99gate::report::RunReport;
 use p99gate::schedule::Rate;
@@ -27,8 +27,8 @@ fn config(rps: f64, duration: Duration, concurrency: usize) -> LoadConfig {
 
 async fn run(server: &DemoServer, config: LoadConfig) -> RunReport {
     let spec = RequestSpec::get(server.url().parse().unwrap());
-    let target = spec.target();
-    let executor = HttpExecutor::new(spec, config.concurrency.get()).unwrap();
+    let executor = HttpExecutor::new(spec, &HttpOptions::new(config.concurrency.get())).unwrap();
+    let target = executor.target();
     let measurements = Engine::new(config, executor).run().await;
     RunReport::new(&measurements, target)
 }

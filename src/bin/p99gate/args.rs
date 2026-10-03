@@ -22,6 +22,10 @@ pub struct Cli {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "parsed once per process; boxing would only add noise"
+)]
 pub enum Command {
     /// Send load to one HTTP endpoint and report latency.
     Run(RunArgs),
@@ -49,6 +53,15 @@ pub struct RunArgs {
     /// Request body, or @path to read it from a file.
     #[arg(short, long)]
     pub body: Option<String>,
+
+    /// Send requests through this http:// proxy. By default the proxy is
+    /// taken from `HTTP_PROXY` / `HTTPS_PROXY`, honouring `NO_PROXY`.
+    #[arg(long, value_name = "URL", value_parser = parse_proxy)]
+    pub proxy: Option<Uri>,
+
+    /// Ignore proxy environment variables and connect directly.
+    #[arg(long, conflicts_with = "proxy")]
+    pub no_proxy: bool,
 
     #[command(flatten)]
     pub report: ReportArgs,
@@ -118,6 +131,14 @@ fn parse_url(s: &str) -> Result<Uri, String> {
     match (uri.scheme_str(), uri.host()) {
         (Some("http" | "https"), Some(_)) => Ok(uri),
         _ => Err("expected an absolute http:// or https:// URL".to_owned()),
+    }
+}
+
+fn parse_proxy(s: &str) -> Result<Uri, String> {
+    let uri: Uri = s.parse().map_err(|e| format!("{e}"))?;
+    match (uri.scheme_str(), uri.host()) {
+        (Some("http"), Some(_)) => Ok(uri),
+        _ => Err("expected an http:// proxy URL".to_owned()),
     }
 }
 
@@ -198,6 +219,15 @@ mod tests {
             &["p99gate", "run", "http://x/", "-H", "no-colon"],
             &["p99gate", "run", "http://x/", "--fail-if", "p99>fast"],
             &["p99gate", "run", "http://x/", "-c", "0"],
+            &["p99gate", "run", "http://x/", "--proxy", "socks5://p:1080"],
+            &[
+                "p99gate",
+                "run",
+                "http://x/",
+                "--proxy",
+                "http://p/",
+                "--no-proxy",
+            ],
         ] {
             assert!(Cli::try_parse_from(argv).is_err(), "{argv:?} should fail");
         }
