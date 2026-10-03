@@ -11,7 +11,7 @@ p99gate run http://localhost:8080/health --rps 100 --duration 30s --fail-if "p99
 ```
 
 Prebuilt binaries for Linux (static), macOS and Windows are attached to every
-[GitHub Release](../../releases/latest).
+[GitHub Release](https://github.com/MarcoBaltazr/p99gate/releases/latest).
 
 ## What a run looks like
 
@@ -144,7 +144,7 @@ latency percentiles, so timeouts make the tail worse, not better.
 `--output json` and `--json-out` produce a versioned report (`schema_version: 1`)
 with every percentile, the latency histogram, status codes, errors, send lag and
 threshold results. The schema is documented in
-[docs/json-schema.md](docs/json-schema.md). Later versions will compare reports
+[docs/json-schema.md](https://github.com/MarcoBaltazr/p99gate/blob/main/docs/json-schema.md). Later versions will compare reports
 from different runs.
 
 ### Using it in CI
@@ -199,10 +199,10 @@ Not in 0.1. The design leaves room for each of these:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for an architecture overview and good
+See [CONTRIBUTING.md](https://github.com/MarcoBaltazr/p99gate/blob/main/CONTRIBUTING.md) for an architecture overview and good
 first issues.
 
 ## License
 
-Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or
-[MIT license](LICENSE-MIT), at your option.
+Licensed under either of [Apache License, Version 2.0](https://github.com/MarcoBaltazr/p99gate/blob/main/LICENSE-APACHE) or
+[MIT license](https://github.com/MarcoBaltazr/p99gate/blob/main/LICENSE-MIT), at your option.
