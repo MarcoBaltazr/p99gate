@@ -46,7 +46,8 @@ a GitHub Action) can be built on its public API.
 | `schedule` | `Rate` and `Schedule`: when request *i* is due. Pure and exact. |
 | `engine` | The scheduler loop, concurrency limit, timeouts, sample collection, live `Progress` counters. |
 | `executor` | The `Executor` trait: the protocol seam. |
-| `http` | `RequestSpec` and `HttpExecutor` (hyper + rustls). |
+| `http` | `RequestSpec`, `HttpOptions` and `HttpExecutor` (hyper + rustls, HTTP/1.1 or HTTP/2). |
+| `http::connector` | Opens connections directly, through a forward proxy, or through a `CONNECT` tunnel. |
 | `outcome` | `Outcome`, `ErrorKind`, `Sample`. |
 | `stats` | `Recorder`: HDR histograms and counters (crate-private). |
 | `report` | `RunReport`: the stable, serialisable result. |
@@ -99,8 +100,11 @@ updating the document in the same pull request.
 - **Read the body from stdin** with `--body @-`.
 - **More threshold metrics**, e.g. `unsent>0` or `send_lag_p99>10ms`. See
   `src/threshold.rs`.
-- **HTTP/2 support**: enable hyper's `http2` feature and ALPN in the rustls
-  connector, and add a flag to force a protocol version.
+- **More HTTP/2 connections**: `--http2` multiplexes everything over one
+  connection; a `--http2-connections <N>` option would spread load over several.
+- **Custom TLS trust**: `--cacert <PEM>` for internal certificate authorities.
+- **SOCKS proxies**: hyper-util already has `SocksV5`; wire it into
+  `src/http/connector.rs`.
 - **A warm-up period** whose samples are excluded from the report
   (`--warmup 5s`).
 - **cargo-binstall metadata**, so `cargo binstall p99gate` downloads the

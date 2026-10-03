@@ -93,10 +93,26 @@ p99gate demo [OPTIONS]
 | `-X, --method <M>` | `GET` | HTTP method (`run` only). |
 | `-H, --header <H>` | | `"Name: value"`, repeatable (`run` only). |
 | `-b, --body <B>` | | Request body, or `@file` (`run` only). |
+| `--http2` | | Use HTTP/2: ALPN for `https`, prior knowledge (h2c) for `http`. Default is HTTP/1.1. |
+| `--proxy <URL>` | | Send requests through this `http://` proxy (`run` only). |
+| `--no-proxy` | | Ignore `HTTP_PROXY` / `HTTPS_PROXY` (`run` only). |
 | `-o, --output <F>` | `text` | `text` or `json`, written to stdout. |
 | `--json-out <PATH>` | | Also write the JSON report to a file. |
 | `--fail-if <COND>` | | Fail the run if the condition holds. Repeatable. |
 | `--strict` | | Fail the run if the target rate was not sustained. |
+
+### Proxies and HTTP versions
+
+Like curl, `p99gate run` uses `HTTP_PROXY`, `HTTPS_PROXY` and `ALL_PROXY`, and
+honours `NO_PROXY`. `--proxy` overrides them and `--no-proxy` disables them.
+Credentials in the proxy URL (`http://user:pass@proxy:3128`) are sent as basic
+auth. `https` targets go through a `CONNECT` tunnel, so TLS stays end to end.
+Proxy latency is part of every measurement, so the report records the proxy
+(without credentials). `p99gate demo` never uses a proxy.
+
+HTTP/1.1 is the default, with up to `--concurrency` connections. With
+`--http2`, all requests share one multiplexed connection. If the server's
+stream limit makes requests queue, that wait counts towards latency.
 
 ### Thresholds
 
@@ -142,6 +158,28 @@ from different runs.
 
 Load test only systems you own or have permission to test. To try the tool,
 use `p99gate demo`.
+
+## Performance of the generator itself
+
+A load generator is only useful while it can keep up with the target rate.
+p99gate reports when it cannot (see *saturated* above), so you never get a quiet
+under-delivery.
+
+These figures come from one machine, so treat them as a rough guide only. They
+were measured on a laptop with an Intel Core i5-1035G1 (4 cores, 8 threads),
+with the p99gate generator and its demo server (~20 ms median latency) sharing
+that CPU, over HTTP/1.1, for 10 s per rate:
+
+| Target rate | Achieved | p99 send lag | Generator CPU | Generator memory | Saturated |
+|---|---|---|---|---|---|
+| 5,000/s | 4,999/s | 2.0 ms | 0.4 cores | 14 MB | no |
+| 15,000/s | 14,999/s | 2.1 ms | 1.0 cores | 41 MB | no |
+| 30,000/s | 29,997/s | 2.0 ms | 2.1 cores | 64 MB | no |
+| 45,000/s | 44,994/s | 5.6 ms | 2.5 cores | 118 MB | no |
+| 60,000/s | 59,996/s | 102 ms | 2.7 cores | 175 MB | yes |
+
+A 5-minute run at 5,000/s (1.5 million requests) kept memory between 15 and
+18 MB, and p99 send lag stayed at 2.0 ms.
 
 ## As a library
 
